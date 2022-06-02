@@ -17,9 +17,11 @@ defmodule BaseUI.Layout do
         <%= render_slot(@header) %>
       </div>
       <div class="flex-grow flex flex-row overflow-hidden">
-        <div class={["flex-none flex flex-col justify-between border-r border-gray-300 overflow-y-auto", get_class_for_single_slot(@left, "w-[225px]")]}>
-          <%= render_slot(@left) %>
-        </div>
+        <%= if @left do %>
+          <div class={["flex-none flex flex-col justify-between border-r border-gray-300 overflow-y-auto", get_class_for_single_slot(@left, "w-[225px]")]}>
+            <%= render_slot(@left) %>
+          </div>
+        <% end %>
         <main class={["flex-1 flex flex-col", @class]}>
           <%= render_slot(@inner_block) %>
         </main>
