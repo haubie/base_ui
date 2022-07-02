@@ -7,7 +7,8 @@ defmodule BaseUI.LiveModal do
   ## ####################
 
   def show(id), do: send_update(__MODULE__, id: id, show: true)
-  def hide(id), do: send_update(__MODULE__, id: id, show: nil)
+  def hide(id), do: send_update(__MODULE__, id: id, show: false)
+
 
   ## ####################
   ## Update
@@ -23,9 +24,7 @@ defmodule BaseUI.LiveModal do
     click   = assigns[:"phx-click"] || nil
     value   = assigns[:value]   || nil
     target   = assigns[:target] || nil
-
-    IO.inspect assigns |> Map.keys(), label: "Assign keys"
-
+    inner_block  = assigns[:inner_block] || socket.assigns[:inner_block]
 
     assign_keys = Map.keys(assigns)
     modal_type =
@@ -36,7 +35,9 @@ defmodule BaseUI.LiveModal do
         true -> [modal_type: :simple, icon: icon, icon_color: "bg-indigo-900 text-white opacity-70", title_color: "text-indigo-900", button_text: (assigns[:button_text] || "Close")]
       end
 
-    {:ok, assign(socket, [show: show, id: id, title: title, message: message, click: click, value: value, target: target] ++ modal_type)}
+    socket = assign(socket, [show: show, id: id, title: title, message: message, click: click, value: value, target: target, inner_block: inner_block] ++ modal_type)
+    IO.inspect socket, label: "Socket"
+    {:ok, socket}
   end
 
   ## ####################
@@ -60,7 +61,14 @@ defmodule BaseUI.LiveModal do
   <div id={@id}>
     <%= if @show do %>
       <BaseUI.backdrop>
-        <BaseUI.modal target={@myself} class="fade-in-scale" type={@modal_type} icon={@icon} icon_color={@icon_color} title_color={@title_color} title={@title} message={@message}>
+        <BaseUI.modal class="fade-in-scale" type={@modal_type} icon={@icon} icon_color={@icon_color} title_color={@title_color} title={@title} message={@message} phx-click-away="hide-modal" phx-target={@myself}>
+
+        Myself: <%= @myself %>, ID:  Myself: <%= @id %>
+
+        Type: <%= @modal_type %>
+        <%= if @inner_block do %>
+          <%= render_slot(@inner_block) %>
+        <% end %>
 
         <:footer>
           <%= if @modal_type == :simple do %>

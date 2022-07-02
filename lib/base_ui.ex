@@ -112,12 +112,13 @@ defmodule BaseUI do
   end
 
   def flyout(assigns) do
+    assigns = assign_new(assigns, :position, fn -> "origin-top-right right-0 mt-16" end)
     ~H"""
     <div
         phx-click-away={JS.hide(to: "##{@id}", transition: {"transition ease-in duration-100", "opacity-100 transform scale-100", "opacity-0 transform scale-90"})}
         id={@id}
         style="display: none;"
-        class="z-40 origin-top-right absolute right-0 mt-16 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu">
+        class={["z-40 absolute w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none", @position]} role="menu">
       <!-- Flyout to menu -->
       <div class="py-1" role="none">
         <%= render_slot(@inner_block) %>
@@ -260,6 +261,9 @@ defmodule BaseUI do
 
     ~H"""
     <li class="h-14 justify-center items-center">
+
+
+
       <a href={@href} class={[nav_active_classes(assigns), "focus:ring-4 focus:ring-pink-500 focus:ring-offset-2 focus:outline-none"]}>
         <%= if @icon do %><span class="mr-3"><.icon glyph={@icon} size="h-6 w-6" /></span><% end %>
         <%= @label %>
@@ -279,7 +283,7 @@ defmodule BaseUI do
 
     ~H"""
     <li class="h-8 justify-center items-center group">
-      <%= Link.link to: @route, class: [@padding_left, nav_active_classes(assigns), "focus:ring-3 focus:ring-pink-500 focus:ring-offset-1 focus:outline-none"] do %>
+      <%= live_redirect to: @route, class: [@padding_left, nav_active_classes(assigns), "focus:ring-3 focus:ring-pink-500 focus:ring-offset-1 focus:outline-none"] do %>
         <%= if @icon do %><span class="mr-3"><.icon glyph={@icon} size="h-6 w-6" /></span><% end %>
         <%= @label %>
       <% end %>
@@ -490,6 +494,52 @@ defmodule BaseUI do
   end
 
 
+  def table(assigns) do
+    assigns =
+      assigns
+      |> assign_new(:width, fn -> "w-full" end)
+      |> assign_new(:class, fn -> nil end)
+      |> assign_new(:col, fn -> [] end)
+      |> assign_new(:rows, fn -> [] end)
+
+    ~H"""
+    <table class={["border border-gray-300 divide-y divide-gray-200 text-indigo-900", @width, @class]}>
+          <thead class="bg-white">
+            <tr class="h-8 align-middle">
+            <%= for col <- @ col do %>
+                <th scope="col" class="px-3 pt-1 text-left text-sm font-semibold text-indigo-400 uppercase tracking-wider">
+                  <%= col.label %>
+                </th>
+            <% end %>
+            </tr>
+          </thead>
+
+          <tbody class="bg-white divide-y divide-gray-200">
+
+            <%= for {row, row_index} <- Enum.with_index(@rows) do %>
+              <tr class={["h-20", table_row_formatter(row_index)]}>
+                <%= for col <- @col do %>
+                  <td class="px-3 whitespace-normal lg:whitespace-nowrap">
+                    <div class="inline-flex flex-col">
+                      <%= render_slot(col, row) %>
+                    </div>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+
+          </tbody>
+
+      </table>
+    """
+  end
+
+  defp table_row_formatter(index) do
+    if Integer.mod(index, 2) == 1, do: "bg-indigo-100/20"
+  end
+
+
+
   def modal(assigns) do
     assigns =
       assigns
@@ -500,14 +550,16 @@ defmodule BaseUI do
       |> assign_new(:title_color, fn -> "text-indigo-900" end)
       |> assign_new(:message, fn -> "Modal message" end)
       |> assign_new(:target, fn -> nil end)
-      |> assign_new(:id, fn -> "modal" end)
+      |> assign_new(:id, fn -> :erlang.unique_integer([:positive]) end)
       |> assign_new(:footer, fn -> nil end)
       |> assign_new(:type, fn -> nil end)
       |> assign_new(:icon_class, fn -> nil end)
+      |> assign_new(:"phx-click-away", fn -> nil end)
+      |> assign_new(:"phx-target", fn -> nil end)
 
     ~H"""
     <div
-          id={@id}
+          id={"modal_#{@id}"}
           class={
             ["inline-block bg-white rounded-md text-left overflow-hidden shadow-xl transform transition-all sm:my-8 align-middle w-full sm:max-w-lg",
             @class]
@@ -516,6 +568,8 @@ defmodule BaseUI do
           aria-modal="true"
           aria-labelledby="modal-headline"
           tabindex="-1"
+          phx-click-away={assigns."phx-click-away"}
+          phx-target={assigns."phx-target"}
         >
           <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div class="sm:flex sm:items-start mr-0 sm:mr-3">
